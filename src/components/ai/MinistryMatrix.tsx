@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowUpDown, Sparkles, Building2 } from "lucide-react";
+import { ArrowUpDown, Building2, Sparkles } from "lucide-react";
 import { recommendations, computeMinistryPerformance } from "@/data/hlcMockData";
 import { motion } from "framer-motion";
 import type { MinistryPerformance } from "@/data/hlcTypes";
@@ -21,18 +21,18 @@ const MinistryMatrix = () => {
   };
 
   const riskBadge = (risk: string) => {
-    const cls = risk === "High" ? "bg-gov-red-light text-gov-red" : risk === "Medium" ? "bg-gov-amber-light text-gov-amber" : "bg-gov-green-light text-gov-green";
-    return <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}>{risk}</span>;
+    const cls = risk === "High" ? "bg-gov-red-light text-destructive" : risk === "Medium" ? "bg-gov-amber-light text-gov-amber" : "bg-gov-green-light text-gov-green";
+    return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${cls}`}>{risk}</span>;
   };
 
   const SortHeader = ({ label, field }: { label: string; field: keyof MinistryPerformance }) => (
     <th
       onClick={() => toggleSort(field)}
-      className="cursor-pointer px-3 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors whitespace-nowrap"
+      className="cursor-pointer px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors whitespace-nowrap"
     >
       <span className="inline-flex items-center gap-1">
         {label}
-        <ArrowUpDown className="h-3 w-3" />
+        <ArrowUpDown className="h-3.5 w-3.5" />
       </span>
     </th>
   );
@@ -44,45 +44,39 @@ const MinistryMatrix = () => {
       transition={{ duration: 0.4, delay: 0.4 }}
       className="card-gov"
     >
-      <div className="border-b border-border px-6 py-4">
-        <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+      <div className="border-b border-border px-6 py-5">
+        <h2 className="font-display text-xl font-semibold text-foreground flex items-center gap-2">
           <Building2 className="h-5 w-5 text-gov-indigo" />
-          Ministry Performance Matrix
+          Ministry Performance
         </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">Sortable analytics with AI remarks per ministry</p>
+        <p className="text-sm text-muted-foreground mt-1">Click column headers to sort</p>
       </div>
       <div className="overflow-x-auto scrollbar-thin">
-        <table className="w-full min-w-[900px]">
+        <table className="w-full min-w-[800px]">
           <thead>
             <tr className="border-b border-border bg-secondary/50">
-              <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Ministry</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ministry</th>
               <SortHeader label="Total" field="total" />
-              <SortHeader label="Implemented" field="fullyImplemented" />
-              <SortHeader label="Partial" field="partiallyImplemented" />
-              <SortHeader label="Progress" field="underProgress" />
-              <SortHeader label="Not Started" field="yetToInitiate" />
+              <SortHeader label="Done" field="fullyImplemented" />
+              <SortHeader label="In Progress" field="underProgress" />
               <SortHeader label="Overdue" field="overdueCount" />
-              <SortHeader label="Avg Delay" field="avgDelay" />
-              <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Risk</th>
-              <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">AI Remark</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Risk</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider min-w-[240px]">AI Remark</th>
             </tr>
           </thead>
           <tbody>
-            {sorted.map((m, i) => (
+            {sorted.map((m) => (
               <tr key={m.ministry} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                <td className="px-3 py-3 text-xs font-medium text-foreground max-w-[200px]">{m.ministry}</td>
-                <td className="px-3 py-3 text-xs font-semibold text-foreground">{m.total}</td>
-                <td className="px-3 py-3 text-xs text-gov-green font-semibold">{m.fullyImplemented}</td>
-                <td className="px-3 py-3 text-xs text-gov-teal font-semibold">{m.partiallyImplemented}</td>
-                <td className="px-3 py-3 text-xs text-gov-amber font-semibold">{m.underProgress}</td>
-                <td className="px-3 py-3 text-xs text-gov-orange font-semibold">{m.yetToInitiate + m.noAction}</td>
-                <td className="px-3 py-3 text-xs text-gov-red font-semibold">{m.overdueCount}</td>
-                <td className="px-3 py-3 text-xs text-foreground">{m.avgDelay}d</td>
-                <td className="px-3 py-3">{riskBadge(m.riskRating)}</td>
-                <td className="px-3 py-3">
-                  <div className="flex items-start gap-1">
-                    <Sparkles className="h-3 w-3 mt-0.5 text-gov-blue shrink-0" />
-                    <span className="text-[11px] text-muted-foreground leading-tight">{m.aiRemark}</span>
+                <td className="px-4 py-4 text-sm font-medium text-foreground max-w-[220px]">{m.ministry}</td>
+                <td className="px-4 py-4 text-sm font-bold text-foreground">{m.total}</td>
+                <td className="px-4 py-4 text-sm font-bold text-gov-green">{m.fullyImplemented}</td>
+                <td className="px-4 py-4 text-sm font-bold text-gov-amber">{m.underProgress + m.partiallyImplemented}</td>
+                <td className="px-4 py-4 text-sm font-bold text-destructive">{m.overdueCount}</td>
+                <td className="px-4 py-4">{riskBadge(m.riskRating)}</td>
+                <td className="px-4 py-4">
+                  <div className="flex items-start gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
+                    <span className="text-xs text-muted-foreground leading-relaxed">{m.aiRemark}</span>
                   </div>
                 </td>
               </tr>

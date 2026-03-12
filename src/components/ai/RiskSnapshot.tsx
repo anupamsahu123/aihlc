@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, RotateCcw, ArrowRightLeft, Pause } from "lucide-react";
+import { AlertTriangle, Clock, Pause, ArrowRightLeft } from "lucide-react";
 import { recommendations } from "@/data/hlcMockData";
 import { motion } from "framer-motion";
 import type { RiskLevel } from "@/data/hlcTypes";
@@ -8,48 +8,49 @@ const RiskSnapshot = () => {
 
   const risks = [
     {
-      category: "Overdue Recommendations",
+      category: "Overdue",
+      description: "Recommendations past their deadline",
       icon: AlertTriangle,
       severity: "High" as RiskLevel,
-      items: recommendations.filter(r => r.delayDays > 0).map(r => r.serialNo),
-      color: "border-l-gov-red bg-gov-red-light/50",
+      count: recommendations.filter(r => r.delayDays > 0).length,
+      color: "border-l-destructive bg-gov-red-light/40",
+      iconColor: "text-destructive",
     },
     {
       category: "Due Within 10 Days",
+      description: "Approaching deadline soon",
       icon: Clock,
       severity: "High" as RiskLevel,
-      items: recommendations.filter(r => {
+      count: recommendations.filter(r => {
         const diff = Math.ceil((r.timelineDateObj.getTime() - now.getTime()) / 86400000);
         return diff > 0 && diff <= 10;
-      }).map(r => r.serialNo),
-      color: "border-l-gov-orange bg-gov-orange-light/50",
+      }).length,
+      color: "border-l-gov-orange bg-gov-orange-light/40",
+      iconColor: "text-gov-orange",
     },
     {
-      category: "Long-Pending, No Recent Update",
+      category: "No Recent Update",
+      description: "Long-pending with no activity",
       icon: Pause,
       severity: "Medium" as RiskLevel,
-      items: recommendations.filter(r => r.updates.length === 0 && r.implementationStatus !== "Fully implemented").map(r => r.serialNo),
-      color: "border-l-gov-amber bg-gov-amber-light/50",
+      count: recommendations.filter(r => r.updates.length === 0 && r.implementationStatus !== "Fully implemented").length,
+      color: "border-l-gov-amber bg-gov-amber-light/40",
+      iconColor: "text-gov-amber",
     },
     {
-      category: "Stuck in Approval Workflow",
+      category: "Stuck in Approval",
+      description: "Waiting for approval action",
       icon: ArrowRightLeft,
       severity: "Medium" as RiskLevel,
-      items: recommendations.filter(r => r.currentOwner === "Ministry Approver" && r.implementationStatus !== "Fully implemented").map(r => r.serialNo),
-      color: "border-l-gov-purple bg-gov-purple-light/50",
-    },
-    {
-      category: "Repeated Under-Progress, No Closure",
-      icon: RotateCcw,
-      severity: "Medium" as RiskLevel,
-      items: recommendations.filter(r => r.updates.length >= 2 && r.implementationStatus === "Under progress").map(r => r.serialNo),
-      color: "border-l-gov-teal bg-gov-teal-light/50",
+      count: recommendations.filter(r => r.currentOwner === "Ministry Approver" && r.implementationStatus !== "Fully implemented").length,
+      color: "border-l-gov-purple bg-gov-purple-light/40",
+      iconColor: "text-gov-purple",
     },
   ];
 
   const severityBadge = (s: RiskLevel) => {
-    const cls = s === "High" ? "bg-gov-red text-primary-foreground" : s === "Medium" ? "bg-gov-amber text-foreground" : "bg-gov-green text-primary-foreground";
-    return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}>{s}</span>;
+    const cls = s === "High" ? "bg-destructive text-primary-foreground" : "bg-gov-amber text-foreground";
+    return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${cls}`}>{s}</span>;
   };
 
   return (
@@ -59,42 +60,23 @@ const RiskSnapshot = () => {
       transition={{ duration: 0.4, delay: 0.3 }}
       className="card-gov"
     >
-      <div className="border-b border-border px-6 py-4">
-        <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-gov-red" />
-          Recommendation Risk Snapshot
+      <div className="border-b border-border px-6 py-5">
+        <h2 className="font-display text-xl font-semibold text-foreground flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          Risk Watchlist
         </h2>
+        <p className="text-sm text-muted-foreground mt-1">Items requiring immediate attention</p>
       </div>
-      <div className="grid gap-3 p-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-4">
         {risks.map((risk) => (
-          <div
-            key={risk.category}
-            className={`rounded-lg border-l-4 p-4 ${risk.color}`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <risk.icon className="h-4 w-4 text-foreground" />
-                <span className="text-xs font-semibold text-foreground">{risk.category}</span>
-              </div>
+          <div key={risk.category} className={`rounded-xl border-l-4 p-5 ${risk.color}`}>
+            <div className="flex items-center justify-between mb-3">
+              <risk.icon className={`h-5 w-5 ${risk.iconColor}`} />
               {severityBadge(risk.severity)}
             </div>
-            <div className="text-2xl font-bold font-display text-foreground mb-1">{risk.items.length}</div>
-            {risk.items.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {risk.items.slice(0, 4).map(id => (
-                  <span key={id} className="rounded bg-card px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border">
-                    {id}
-                  </span>
-                ))}
-                {risk.items.length > 4 && (
-                  <span className="rounded bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground border border-border">
-                    +{risk.items.length - 4} more
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-[10px] text-muted-foreground">No items in this category</span>
-            )}
+            <p className="font-display text-3xl font-bold text-foreground mb-1">{risk.count}</p>
+            <p className="text-sm font-semibold text-foreground">{risk.category}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{risk.description}</p>
           </div>
         ))}
       </div>
