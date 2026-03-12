@@ -37,10 +37,8 @@ const AIAssistance = () => {
         
         <RecommendationSearch onSelectRec={setSelectedRec} />
         <ActionablePanels onSelectRec={setSelectedRec} />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <DocumentIntelligence />
-          <AIQueryAssistant />
-        </div>
+        <DocumentIntelligence />
+        <AIQueryAssistant />
       </main>
 
       {selectedRec && (
