@@ -4,7 +4,7 @@ import ExecutiveSummary from "@/components/ai/ExecutiveSummary";
 import KPICards from "@/components/ai/KPICards";
 import RiskSnapshot from "@/components/ai/RiskSnapshot";
 import MinistryMatrix from "@/components/ai/MinistryMatrix";
-import MinistryHeatmap from "@/components/ai/MinistryHeatmap";
+
 import RecommendationSearch from "@/components/ai/RecommendationSearch";
 import RecommendationDetail from "@/components/ai/RecommendationDetail";
 import ActionablePanels from "@/components/ai/ActionablePanels";
@@ -34,13 +34,11 @@ const AIAssistance = () => {
         <KPICards />
         <RiskSnapshot />
         <MinistryMatrix />
-        <MinistryHeatmap />
+        
         <RecommendationSearch onSelectRec={setSelectedRec} />
         <ActionablePanels onSelectRec={setSelectedRec} />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <DocumentIntelligence />
-          <AIQueryAssistant />
-        </div>
+        <DocumentIntelligence />
+        <AIQueryAssistant />
       </main>
 
       {selectedRec && (
