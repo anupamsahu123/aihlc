@@ -12,11 +12,11 @@ const ActionablePanels = ({ onSelectRec }: ActionablePanelsProps) => {
     {
       title: "Needs Immediate Review",
       icon: Eye,
-      color: "border-l-gov-red",
+      color: "border-l-destructive",
       items: recommendations.filter(r => r.delayDays > 60 || r.implementationStatus === "No action"),
     },
     {
-      title: "Pending with NITI Approver",
+      title: "Pending with NITI",
       icon: Clock,
       color: "border-l-gov-purple",
       items: recommendations.filter(r => r.currentOwner === "NITI Approver" && r.implementationStatus !== "Fully implemented"),
@@ -28,16 +28,10 @@ const ActionablePanels = ({ onSelectRec }: ActionablePanelsProps) => {
       items: recommendations.filter(r => (r.currentOwner === "Ministry Director" || r.currentOwner === "Ministry Approver") && r.implementationStatus !== "Fully implemented"),
     },
     {
-      title: "Strong Closure Evidence",
+      title: "Strong Closure",
       icon: CheckCircle2,
       color: "border-l-gov-green",
       items: recommendations.filter(r => r.implementationStatus === "Fully implemented" && r.hasJustificationDoc),
-    },
-    {
-      title: "No Action Text Available",
-      icon: XCircle,
-      color: "border-l-gov-orange",
-      items: recommendations.filter(r => !r.detailsOfActionTaken || r.detailsOfActionTaken.trim() === ""),
     },
   ];
 
@@ -48,41 +42,41 @@ const ActionablePanels = ({ onSelectRec }: ActionablePanelsProps) => {
       transition={{ duration: 0.4, delay: 0.6 }}
       className="card-gov"
     >
-      <div className="border-b border-border px-6 py-4">
-        <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+      <div className="border-b border-border px-6 py-5">
+        <h2 className="font-display text-xl font-semibold text-foreground flex items-center gap-2">
           <FileText className="h-5 w-5 text-gov-purple" />
-          Actionable AI Insights
+          Action Items
         </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">Smart categorization for executive review priorities</p>
+        <p className="text-sm text-muted-foreground mt-1">Categorized priorities for review</p>
       </div>
-      <div className="grid gap-3 p-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-4">
         {panels.map((panel) => (
-          <div key={panel.title} className={`rounded-lg border border-border border-l-4 ${panel.color} p-4`}>
-            <div className="flex items-center justify-between mb-3">
+          <div key={panel.title} className={`rounded-xl border border-border border-l-4 ${panel.color} p-5`}>
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <panel.icon className="h-4 w-4 text-foreground" />
-                <span className="text-xs font-semibold text-foreground">{panel.title}</span>
+                <panel.icon className="h-5 w-5 text-foreground" />
+                <span className="text-sm font-semibold text-foreground">{panel.title}</span>
               </div>
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
                 {panel.items.length}
               </span>
             </div>
             {panel.items.length === 0 ? (
-              <p className="text-[10px] text-muted-foreground">No items in this category</p>
+              <p className="text-xs text-muted-foreground">No items</p>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {panel.items.slice(0, 3).map(rec => (
                   <button
                     key={rec.id}
                     onClick={() => onSelectRec(rec)}
-                    className="w-full text-left rounded-md bg-secondary/50 px-2.5 py-1.5 text-[11px] hover:bg-accent transition-colors"
+                    className="w-full text-left rounded-lg bg-secondary/50 px-3 py-2 text-xs hover:bg-accent transition-colors"
                   >
-                    <span className="font-semibold text-primary">{rec.serialNo}</span>
-                    <span className="text-muted-foreground ml-1.5">{rec.description.substring(0, 60)}...</span>
+                    <span className="font-bold text-primary">{rec.serialNo}</span>
+                    <span className="text-muted-foreground ml-2">{rec.description.substring(0, 50)}...</span>
                   </button>
                 ))}
                 {panel.items.length > 3 && (
-                  <p className="text-[10px] text-muted-foreground text-center">+{panel.items.length - 3} more</p>
+                  <p className="text-xs text-muted-foreground text-center pt-1">+{panel.items.length - 3} more</p>
                 )}
               </div>
             )}
