@@ -34,7 +34,7 @@ const AIAssistance = () => {
         <KPICards />
         <RiskSnapshot />
         <MinistryMatrix />
-        <MinistryHeatmap />
+        
         <RecommendationSearch onSelectRec={setSelectedRec} />
         <ActionablePanels onSelectRec={setSelectedRec} />
         <div className="grid gap-6 lg:grid-cols-2">
