@@ -1,10 +1,22 @@
 import { AlertTriangle, Clock, Pause, ArrowRightLeft } from "lucide-react";
 import { recommendations } from "@/data/hlcMockData";
 import { motion } from "framer-motion";
-import type { RiskLevel } from "@/data/hlcTypes";
+import type { RiskLevel, Recommendation } from "@/data/hlcTypes";
 
-const RiskSnapshot = () => {
+interface RiskSnapshotProps {
+  onDrillDown: (title: string, items: Recommendation[]) => void;
+}
+
+const RiskSnapshot = ({ onDrillDown }: RiskSnapshotProps) => {
   const now = new Date("2026-03-12");
+
+  const overdueItems = recommendations.filter(r => r.delayDays > 0);
+  const nearDueItems = recommendations.filter(r => {
+    const diff = Math.ceil((r.timelineDateObj.getTime() - now.getTime()) / 86400000);
+    return diff > 0 && diff <= 10;
+  });
+  const noUpdateItems = recommendations.filter(r => r.updates.length === 0 && r.implementationStatus !== "Fully implemented");
+  const stuckItems = recommendations.filter(r => r.currentOwner === "Ministry Approver" && r.implementationStatus !== "Fully implemented");
 
   const risks = [
     {
@@ -12,39 +24,40 @@ const RiskSnapshot = () => {
       description: "Recommendations past their deadline",
       icon: AlertTriangle,
       severity: "High" as RiskLevel,
-      count: recommendations.filter(r => r.delayDays > 0).length,
+      count: overdueItems.length,
       color: "border-l-destructive bg-gov-red-light/40",
       iconColor: "text-destructive",
+      items: overdueItems,
     },
     {
       category: "Due Within 10 Days",
       description: "Approaching deadline soon",
       icon: Clock,
       severity: "High" as RiskLevel,
-      count: recommendations.filter(r => {
-        const diff = Math.ceil((r.timelineDateObj.getTime() - now.getTime()) / 86400000);
-        return diff > 0 && diff <= 10;
-      }).length,
+      count: nearDueItems.length,
       color: "border-l-gov-orange bg-gov-orange-light/40",
       iconColor: "text-gov-orange",
+      items: nearDueItems,
     },
     {
       category: "No Recent Update",
       description: "Long-pending with no activity",
       icon: Pause,
       severity: "Medium" as RiskLevel,
-      count: recommendations.filter(r => r.updates.length === 0 && r.implementationStatus !== "Fully implemented").length,
+      count: noUpdateItems.length,
       color: "border-l-gov-amber bg-gov-amber-light/40",
       iconColor: "text-gov-amber",
+      items: noUpdateItems,
     },
     {
       category: "Stuck in Approval",
       description: "Waiting for approval action",
       icon: ArrowRightLeft,
       severity: "Medium" as RiskLevel,
-      count: recommendations.filter(r => r.currentOwner === "Ministry Approver" && r.implementationStatus !== "Fully implemented").length,
+      count: stuckItems.length,
       color: "border-l-gov-purple bg-gov-purple-light/40",
       iconColor: "text-gov-purple",
+      items: stuckItems,
     },
   ];
 
@@ -65,16 +78,20 @@ const RiskSnapshot = () => {
           <AlertTriangle className="h-5 w-5 text-destructive" />
           Risk Watchlist
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">Items requiring immediate attention</p>
+        <p className="text-sm text-muted-foreground mt-1">Click any count to view detailed recommendations</p>
       </div>
       <div className="grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-4">
         {risks.map((risk) => (
-          <div key={risk.category} className={`rounded-xl border-l-4 p-5 ${risk.color}`}>
+          <div
+            key={risk.category}
+            className={`rounded-xl border-l-4 p-5 ${risk.color} ${risk.count > 0 ? "cursor-pointer hover:shadow-md transition-shadow" : ""}`}
+            onClick={() => risk.count > 0 && onDrillDown(`Risk: ${risk.category}`, risk.items)}
+          >
             <div className="flex items-center justify-between mb-3">
               <risk.icon className={`h-5 w-5 ${risk.iconColor}`} />
               {severityBadge(risk.severity)}
             </div>
-            <p className="font-display text-3xl font-bold text-foreground mb-1">{risk.count}</p>
+            <p className={`font-display text-3xl font-bold text-foreground mb-1 ${risk.count > 0 ? "underline decoration-dotted underline-offset-4" : ""}`}>{risk.count}</p>
             <p className="text-sm font-semibold text-foreground">{risk.category}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{risk.description}</p>
           </div>
