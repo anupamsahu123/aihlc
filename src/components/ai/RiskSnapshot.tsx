@@ -4,61 +4,28 @@ import { motion } from "framer-motion";
 import type { RiskLevel, Recommendation } from "@/data/hlcTypes";
 
 interface RiskSnapshotProps {
+  activeFilter: "All" | "HLC-A" | "HLC-B";
   onDrillDown: (title: string, items: Recommendation[]) => void;
 }
 
-const RiskSnapshot = ({ onDrillDown }: RiskSnapshotProps) => {
+const RiskSnapshot = ({ activeFilter, onDrillDown }: RiskSnapshotProps) => {
   const now = new Date("2026-03-12");
+  const filtered = activeFilter === "All" ? recommendations :
+    recommendations.filter(r => r.hlcType === activeFilter);
 
-  const overdueItems = recommendations.filter(r => r.delayDays > 0);
-  const nearDueItems = recommendations.filter(r => {
+  const overdueItems = filtered.filter(r => r.delayDays > 0);
+  const nearDueItems = filtered.filter(r => {
     const diff = Math.ceil((r.timelineDateObj.getTime() - now.getTime()) / 86400000);
     return diff > 0 && diff <= 10;
   });
-  const noUpdateItems = recommendations.filter(r => r.updates.length === 0 && r.implementationStatus !== "Fully implemented");
-  const stuckItems = recommendations.filter(r => r.currentOwner === "Ministry Approver" && r.implementationStatus !== "Fully implemented");
+  const noUpdateItems = filtered.filter(r => r.updates.length === 0 && r.implementationStatus !== "Fully implemented");
+  const stuckItems = filtered.filter(r => r.currentOwner === "Ministry Approver" && r.implementationStatus !== "Fully implemented");
 
   const risks = [
-    {
-      category: "Overdue",
-      description: "Recommendations past their deadline",
-      icon: AlertTriangle,
-      severity: "High" as RiskLevel,
-      count: overdueItems.length,
-      color: "border-l-destructive bg-gov-red-light/40",
-      iconColor: "text-destructive",
-      items: overdueItems,
-    },
-    {
-      category: "Due Within 10 Days",
-      description: "Approaching deadline soon",
-      icon: Clock,
-      severity: "High" as RiskLevel,
-      count: nearDueItems.length,
-      color: "border-l-gov-orange bg-gov-orange-light/40",
-      iconColor: "text-gov-orange",
-      items: nearDueItems,
-    },
-    {
-      category: "No Recent Update",
-      description: "Long-pending with no activity",
-      icon: Pause,
-      severity: "Medium" as RiskLevel,
-      count: noUpdateItems.length,
-      color: "border-l-gov-amber bg-gov-amber-light/40",
-      iconColor: "text-gov-amber",
-      items: noUpdateItems,
-    },
-    {
-      category: "Stuck in Approval",
-      description: "Waiting for approval action",
-      icon: ArrowRightLeft,
-      severity: "Medium" as RiskLevel,
-      count: stuckItems.length,
-      color: "border-l-gov-purple bg-gov-purple-light/40",
-      iconColor: "text-gov-purple",
-      items: stuckItems,
-    },
+    { category: "Overdue", description: "Past deadline", icon: AlertTriangle, severity: "High" as RiskLevel, count: overdueItems.length, color: "border-l-destructive bg-gov-red-light/40", iconColor: "text-destructive", items: overdueItems },
+    { category: "Due Within 10 Days", description: "Approaching soon", icon: Clock, severity: "High" as RiskLevel, count: nearDueItems.length, color: "border-l-gov-orange bg-gov-orange-light/40", iconColor: "text-gov-orange", items: nearDueItems },
+    { category: "No Recent Update", description: "No activity recorded", icon: Pause, severity: "Medium" as RiskLevel, count: noUpdateItems.length, color: "border-l-gov-amber bg-gov-amber-light/40", iconColor: "text-gov-amber", items: noUpdateItems },
+    { category: "Stuck in Approval", description: "Awaiting approval", icon: ArrowRightLeft, severity: "Medium" as RiskLevel, count: stuckItems.length, color: "border-l-gov-purple bg-gov-purple-light/40", iconColor: "text-gov-purple", items: stuckItems },
   ];
 
   const severityBadge = (s: RiskLevel) => {
@@ -67,12 +34,7 @@ const RiskSnapshot = ({ onDrillDown }: RiskSnapshotProps) => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.3 }}
-      className="card-gov"
-    >
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }} className="card-gov">
       <div className="border-b border-border px-6 py-5">
         <h2 className="font-display text-xl font-semibold text-foreground flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-destructive" />

@@ -5,7 +5,7 @@ import KPICards from "@/components/ai/KPICards";
 import RiskSnapshot from "@/components/ai/RiskSnapshot";
 import RecommendationSearch from "@/components/ai/RecommendationSearch";
 import RecommendationDetail from "@/components/ai/RecommendationDetail";
-import ActionablePanels from "@/components/ai/ActionablePanels";
+import MinistryInsights from "@/components/ai/MinistryInsights";
 import DocumentIntelligence from "@/components/ai/DocumentIntelligence";
 import AISearchResponse from "@/components/ai/AISearchResponse";
 import DrillDownTable from "@/components/ai/DrillDownTable";
@@ -16,6 +16,7 @@ const AIAssistance = () => {
   const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [drillDown, setDrillDown] = useState<{ title: string; items: Recommendation[] } | null>(null);
+  const [activeFilter, setActiveFilter] = useState<"All" | "HLC-A" | "HLC-B">("All");
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -34,7 +35,12 @@ const AIAssistance = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AIHeader onSearch={handleSearch} onRecSearch={handleRecSearch} />
+      <AIHeader
+        onSearch={handleSearch}
+        onRecSearch={handleRecSearch}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+      />
 
       <main className="mx-auto max-w-7xl px-6 py-8 space-y-8">
         {searchQuery && (
@@ -45,9 +51,9 @@ const AIAssistance = () => {
           />
         )}
 
-        <ExecutiveSummary />
-        <KPICards onDrillDown={handleDrillDown} />
-        <RiskSnapshot onDrillDown={handleDrillDown} />
+        <ExecutiveSummary activeFilter={activeFilter} />
+        <KPICards activeFilter={activeFilter} onDrillDown={handleDrillDown} />
+        <RiskSnapshot activeFilter={activeFilter} onDrillDown={handleDrillDown} />
 
         {drillDown && (
           <DrillDownTable
@@ -58,8 +64,8 @@ const AIAssistance = () => {
           />
         )}
 
+        <MinistryInsights activeFilter={activeFilter} />
         <RecommendationSearch onSelectRec={setSelectedRec} />
-        <ActionablePanels onSelectRec={setSelectedRec} />
 
         <div className="w-full">
           <DocumentIntelligence />
