@@ -87,7 +87,7 @@ const MinistryInsights = ({ activeFilter }: MinistryInsightsProps) => {
       <div className="border-b border-border px-6 py-5">
         <h2 className="font-display text-xl font-semibold text-foreground flex items-center gap-2">
           <Building2 className="h-5 w-5 text-primary" />
-          Ministry-Wise Progress
+          Ministry-Wise Insights
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           {data.length} Ministries/Departments — click any row to view detailed summary
