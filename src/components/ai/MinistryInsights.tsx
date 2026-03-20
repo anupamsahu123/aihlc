@@ -110,7 +110,7 @@ const MinistryInsights = ({ activeFilter }: MinistryInsightsProps) => {
           const name = entry.departmentName || entry.ministryName;
           const isSelected = selectedId === key;
           const segments = getBarSegments(entry);
-          const barMaxWidth = (entry.total / maxTotal) * 100;
+          const barMaxWidth = getBarWidth(entry.total);
 
           return (
             <div key={`${key}-${idx}`}>
