@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, ChevronRight, X } from "lucide-react";
+import { Building2, ChevronUp, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMinistryData, type MinistryEntry } from "@/data/ministryData";
@@ -8,29 +8,72 @@ interface MinistryInsightsProps {
   activeFilter: "All" | "HLC-A" | "HLC-B";
 }
 
-function generateMinistrySummary(entry: MinistryEntry): string {
+function generateDetailedSummary(entry: MinistryEntry): string {
   const name = entry.departmentName ? `${entry.departmentName}, ${entry.ministryName}` : entry.ministryName;
   const parts: string[] = [];
-  parts.push(`${name} is responsible for ${entry.total} recommendations.`);
+
+  parts.push(`${name} is responsible for ${entry.total} recommendations under the assigned portfolio.`);
+
   if (entry.fullyImplemented.count > 0) {
-    parts.push(`Fully Implemented (${entry.fullyImplemented.count}) through notifications, amendments, approvals, and operationalisation.`);
+    parts.push(`Of these, ${entry.fullyImplemented.count} recommendations (${entry.fullyImplemented.percentage}%) have been Fully Implemented through issuance of notifications, amendments to existing rules, operationalisation of schemes, grant of approvals, and issuance of guidelines or office memoranda as recorded in the dataset.`);
   }
+
   if (entry.inProgress.total > 0) {
-    parts.push(`Under Progress (${entry.inProgress.total}) at stages including inter-ministerial consultation, Cabinet approval, and regulatory examination.${entry.inProgress.overdue > 0 ? ` Of these, ${entry.inProgress.overdue} are overdue.` : ""}`);
+    const stages: string[] = [];
+    if (entry.inProgress.onTrack > 0) stages.push(`${entry.inProgress.onTrack} on track`);
+    if (entry.inProgress.overdue > 0) stages.push(`${entry.inProgress.overdue} overdue`);
+    parts.push(`Under Progress (${entry.inProgress.total} recommendations, ${entry.inProgress.percentage}%) are at various stages including Cabinet approval processes, EFC appraisal, inter-ministerial consultation, stakeholder consultation, regulatory examination, draft note circulation, and awaiting final approval from competent authorities. Of these, ${stages.join(" and ")}. The recommendations currently under progress are pending with the concerned Ministry/Department for finalisation of draft Cabinet Notes, securing regulatory clearances, and completion of inter-ministerial consultations as per recorded action taken entries.`);
   }
+
   if (entry.yetToInitiate.total > 0) {
-    parts.push(`Yet to Initiate (${entry.yetToInitiate.total}).${entry.yetToInitiate.overdue > 0 ? ` Of these, ${entry.yetToInitiate.overdue} are overdue beyond approved timelines.` : ""}`);
+    parts.push(`Yet to Initiate (${entry.yetToInitiate.total} recommendations, ${entry.yetToInitiate.percentage}%) remain under examination, under deliberation, or no further action has been taken as per the recorded data.${entry.yetToInitiate.overdue > 0 ? ` Of these, ${entry.yetToInitiate.overdue} are overdue beyond the approved timelines and require immediate attention from the implementing authority.` : ` All ${entry.yetToInitiate.onTrack} are within their approved timelines.`}`);
   }
+
+  if (entry.fullyImplemented.count === 0 && entry.inProgress.total === 0) {
+    parts.push(`No recommendations have been implemented or progressed. All ${entry.total} recommendations are pending initiation by the concerned Ministry/Department.`);
+  }
+
+  const totalOverdue = entry.inProgress.overdue + entry.yetToInitiate.overdue;
+  if (totalOverdue > 0) {
+    parts.push(`Overall, ${totalOverdue} recommendations are overdue and require escalation to the competent authority for expedited action.`);
+  }
+
   parts.push(`Overall implementation rate: ${entry.fullyImplemented.percentage}%.`);
+
   return parts.join(" ");
 }
+
+// Color segments for the stacked bar
+const getBarSegments = (entry: MinistryEntry) => {
+  const segments: { width: number; color: string; label: string; count: number }[] = [];
+  const total = entry.total;
+  if (total === 0) return segments;
+
+  if (entry.fullyImplemented.count > 0) {
+    segments.push({ width: (entry.fullyImplemented.count / total) * 100, color: "bg-emerald-500", label: "Fully Implemented", count: entry.fullyImplemented.count });
+  }
+  if (entry.inProgress.onTrack > 0) {
+    segments.push({ width: (entry.inProgress.onTrack / total) * 100, color: "bg-amber-400", label: "In Progress - On Track", count: entry.inProgress.onTrack });
+  }
+  if (entry.inProgress.overdue > 0) {
+    segments.push({ width: (entry.inProgress.overdue / total) * 100, color: "bg-orange-500", label: "In Progress - Overdue", count: entry.inProgress.overdue });
+  }
+  if (entry.yetToInitiate.onTrack > 0) {
+    segments.push({ width: (entry.yetToInitiate.onTrack / total) * 100, color: "bg-gray-300", label: "Yet to Initiate - Not Due", count: entry.yetToInitiate.onTrack });
+  }
+  if (entry.yetToInitiate.overdue > 0) {
+    segments.push({ width: (entry.yetToInitiate.overdue / total) * 100, color: "bg-red-500", label: "Yet to Initiate - Overdue", count: entry.yetToInitiate.overdue });
+  }
+
+  return segments;
+};
 
 const MinistryInsights = ({ activeFilter }: MinistryInsightsProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const data = getMinistryData(activeFilter).sort((a, b) => b.total - a.total);
+  const maxTotal = data.length > 0 ? data[0].total : 1;
 
   const getKey = (entry: MinistryEntry) => `${entry.ministryId}-${entry.departmentId || "m"}`;
-
   const selectedEntry = selectedId ? data.find(d => getKey(d) === selectedId) : null;
 
   return (
@@ -40,144 +83,106 @@ const MinistryInsights = ({ activeFilter }: MinistryInsightsProps) => {
       transition={{ duration: 0.4, delay: 0.6 }}
       className="card-gov"
     >
+      {/* Header */}
       <div className="border-b border-border px-6 py-5">
         <h2 className="font-display text-xl font-semibold text-foreground flex items-center gap-2">
           <Building2 className="h-5 w-5 text-primary" />
-          Ministry / Department Insights
+          Ministry-Wise Progress
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          {data.length} Ministries/Departments — sorted by recommendation count. Click to view summary.
+          {data.length} Ministries/Departments — click any row to view detailed summary
         </p>
       </div>
 
-      <div className="flex flex-col lg:flex-row">
-        {/* Ministry List */}
-        <div className="flex-1 max-h-[500px] overflow-y-auto scrollbar-thin border-r border-border">
-          {data.map((entry, idx) => {
-            const key = getKey(entry);
-            const name = entry.departmentName ? `${entry.departmentName}` : entry.ministryName;
-            const subtitle = entry.departmentName ? entry.ministryName : null;
-            const isSelected = selectedId === key;
+      {/* Stacked Bar Chart List */}
+      <div className="max-h-[600px] overflow-y-auto scrollbar-thin">
+        {data.map((entry, idx) => {
+          const key = getKey(entry);
+          const name = entry.departmentName || entry.ministryName;
+          const isSelected = selectedId === key;
+          const segments = getBarSegments(entry);
+          const barMaxWidth = (entry.total / maxTotal) * 100;
 
-            return (
+          return (
+            <div key={`${key}-${idx}`}>
               <button
-                key={`${key}-${idx}`}
                 onClick={() => setSelectedId(isSelected ? null : key)}
-                className={`w-full flex items-center gap-4 px-5 py-4 border-b border-border last:border-0 text-left transition-colors ${
-                  isSelected ? "bg-primary/5" : "hover:bg-secondary/50"
+                className={`w-full grid grid-cols-[minmax(200px,280px)_1fr_60px] items-center gap-4 px-6 py-3.5 border-b border-border text-left transition-colors ${
+                  isSelected ? "bg-primary/5" : "hover:bg-secondary/40"
                 }`}
               >
-                {/* Rank */}
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-muted-foreground">
-                  {idx + 1}
-                </span>
-
-                {/* Name */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{name}</p>
-                  {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
+                {/* Ministry Name */}
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate leading-tight">{name}</p>
+                  {entry.departmentName && (
+                    <p className="text-[11px] text-muted-foreground truncate">{entry.ministryName}</p>
+                  )}
                 </div>
 
-                {/* Stats Mini */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="flex gap-1.5 items-center">
-                    {entry.fullyImplemented.count > 0 && (
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                        {entry.fullyImplemented.count}
-                      </span>
-                    )}
-                    {entry.inProgress.total > 0 && (
-                      <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                        {entry.inProgress.total}
-                      </span>
-                    )}
-                    {entry.yetToInitiate.total > 0 && (
-                      <span className="inline-flex items-center rounded-full bg-orange-50 border border-orange-200 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
-                        {entry.yetToInitiate.total}
-                      </span>
-                    )}
+                {/* Stacked Bar */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex h-7 rounded overflow-hidden" style={{ width: `${barMaxWidth}%` }}>
+                    {segments.map((seg, i) => (
+                      <div
+                        key={i}
+                        className={`${seg.color} flex items-center justify-center text-[10px] font-bold text-white transition-all`}
+                        style={{ width: `${(seg.count / entry.total) * 100}%`, minWidth: seg.count > 0 ? "24px" : "0" }}
+                        title={`${seg.label}: ${seg.count}`}
+                      >
+                        {seg.count > 0 && seg.count}
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-sm font-bold text-primary">{entry.total}</span>
-                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isSelected ? "rotate-90" : ""}`} />
+                </div>
+
+                {/* Total + Chevron */}
+                <div className="flex items-center justify-end gap-1.5">
+                  <span className="text-base font-bold text-foreground">{entry.total}</span>
+                  {isSelected ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </div>
               </button>
-            );
-          })}
-        </div>
 
-        {/* Detail Panel */}
-        <AnimatePresence mode="wait">
-          {selectedEntry ? (
-            <motion.div
-              key={selectedId}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="w-full lg:w-[400px] p-5 bg-secondary/20"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">
-                    {selectedEntry.departmentName || selectedEntry.ministryName}
-                  </h3>
-                  {selectedEntry.departmentName && (
-                    <p className="text-xs text-muted-foreground">{selectedEntry.ministryName}</p>
-                  )}
-                </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedId(null)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-center">
-                  <p className="text-xl font-bold text-emerald-800">{selectedEntry.fullyImplemented.count}</p>
-                  <p className="text-[10px] text-emerald-600 font-medium">Implemented</p>
-                </div>
-                <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-center">
-                  <p className="text-xl font-bold text-amber-800">{selectedEntry.inProgress.total}</p>
-                  <p className="text-[10px] text-amber-600 font-medium">In Progress</p>
-                </div>
-                <div className="rounded-lg bg-orange-50 border border-orange-200 p-3 text-center">
-                  <p className="text-xl font-bold text-orange-800">{selectedEntry.yetToInitiate.total}</p>
-                  <p className="text-[10px] text-orange-600 font-medium">Yet to Initiate</p>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="mb-4">
-                <div className="flex h-3 w-full rounded-full overflow-hidden bg-border">
-                  {selectedEntry.fullyImplemented.count > 0 && (
-                    <div className="bg-emerald-500 transition-all" style={{ width: `${selectedEntry.fullyImplemented.percentage}%` }} />
-                  )}
-                  {selectedEntry.inProgress.total > 0 && (
-                    <div className="bg-amber-500 transition-all" style={{ width: `${selectedEntry.inProgress.percentage}%` }} />
-                  )}
-                  {selectedEntry.yetToInitiate.total > 0 && (
-                    <div className="bg-orange-400 transition-all" style={{ width: `${selectedEntry.yetToInitiate.percentage}%` }} />
-                  )}
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-muted-foreground">{selectedEntry.fullyImplemented.percentage}% done</span>
-                  <span className="text-[10px] text-muted-foreground">{selectedEntry.total} total</span>
-                </div>
-              </div>
-
-              {/* Summary */}
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {generateMinistrySummary(selectedEntry)}
-              </p>
-            </motion.div>
-          ) : (
-            <div className="hidden lg:flex w-[400px] items-center justify-center p-10 text-center">
-              <div>
-                <Building2 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Select a Ministry or Department to view detailed insights</p>
-              </div>
+              {/* Expanded Detail Summary */}
+              <AnimatePresence>
+                {isSelected && selectedEntry && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden border-b border-border"
+                  >
+                    <div className="px-6 py-5 bg-secondary/30">
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-foreground">
+                          {selectedEntry.departmentName ? `${selectedEntry.departmentName}, ${selectedEntry.ministryName}` : selectedEntry.ministryName}
+                        </h3>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); setSelectedId(null); }}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {generateDetailedSummary(selectedEntry)}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          )}
-        </AnimatePresence>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="px-6 py-4 border-t border-border flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm bg-emerald-500" /> Fully Implemented</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm bg-amber-400" /> Under Progress - On Track</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm bg-orange-500" /> Under Progress - Overdue</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm bg-gray-300" /> Yet to Initiate - Not Due</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm bg-red-500" /> Yet to Initiate - Overdue</span>
       </div>
     </motion.div>
   );
