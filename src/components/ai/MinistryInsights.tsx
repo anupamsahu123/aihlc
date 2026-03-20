@@ -72,6 +72,15 @@ const MinistryInsights = ({ activeFilter }: MinistryInsightsProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const data = getMinistryData(activeFilter).sort((a, b) => b.total - a.total);
   const maxTotal = data.length > 0 ? data[0].total : 1;
+  const MIN_BAR_PCT = 8; // minimum bar width percentage for small counts
+  const THRESHOLD_RATIO = 0.15; // below this ratio of max, bars are equal (minimum) size
+
+  const getBarWidth = (total: number) => {
+    const ratio = total / maxTotal;
+    if (ratio < THRESHOLD_RATIO) return MIN_BAR_PCT;
+    // Scale linearly from MIN_BAR_PCT to 100
+    return MIN_BAR_PCT + (ratio) * (100 - MIN_BAR_PCT);
+  };
 
   const getKey = (entry: MinistryEntry) => `${entry.ministryId}-${entry.departmentId || "m"}`;
   const selectedEntry = selectedId ? data.find(d => getKey(d) === selectedId) : null;
